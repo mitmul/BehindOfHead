@@ -232,7 +232,19 @@ void MainWindow::getArrivalFile()
 
                   // 10秒掛けて表示する
                   boost::timer t;
-                  int fps = 4;
+                  int fps;
+
+                  // 第１幕ではゆっくり
+                  if(arrival_pic_number <= FIRST_PART)
+                  {
+                    fps = 20;
+                  }
+
+                  // 第２幕以降は速く表示
+                  else
+                  {
+                    fps = 4;
+                  }
                   int pixel_num = display_image.cols * display_image.rows;
                   for(int i = 0; i < fps * NORMAL_TIME; ++i)
                   {
@@ -242,13 +254,9 @@ void MainWindow::getArrivalFile()
                     cv::Mat garden_show(garden_image, garden_roi);
                     cv::resize(garden_show, resize_garden, cv::Size(display_image.cols, display_image.rows));
 
-                    // 第１幕ではゆっくり
-                    // 第２幕以降は速く表示
-                    else
-                    {
-                      // ブレンド
-                      display_image = alphaBlend(resize_garden, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
-                    }
+                    // ブレンド
+                    display_image = alphaBlend(resize_garden, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
+
                     showFullScreen(display_image);
                   }
                   cout << "Garden -> Diff Elapsed time: " << t.elapsed() << endl;
