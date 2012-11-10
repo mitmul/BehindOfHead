@@ -15,6 +15,8 @@
 
 #define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-10/"
 #define NORMAL_TIME 10
+#define FIRST_PART 14
+#define SECOND_PART 28
 
 namespace Ui {
   class MainWindow;

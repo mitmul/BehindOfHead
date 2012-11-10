@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
   screen_mode = 0;
 
   // Kinect開始
-  on_pushButton_SensorStart_clicked();
+  //  on_pushButton_SensorStart_clicked();
 
   // ディレクトリ監視
   dir_thread_running = true;
@@ -67,13 +67,13 @@ void MainWindow::getKinectData()
       cv::Mat mask(480, 640, CV_16SC1, user_md);
       mask.convertTo(mask_show, CV_8U, 255.0);
 
-      if(arrival_pic_number == 14)
+      if(arrival_pic_number == FIRST_PART)
       {
         garden_image = cv::imread("7.jpg");
         garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
       }
 
-      if(arrival_pic_number == 34)
+      if(arrival_pic_number == SECOND_PART)
       {
         garden_image = cv::imread("3.jpg");
         garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
@@ -98,7 +98,18 @@ void MainWindow::getKinectData()
 
           // 10秒掛けて表示する
           boost::timer t;
-          int fps = 3;
+          int fps;
+
+          // １幕はゆっくり戻す
+          if(arrival_pic_number <= FIRST_PART)
+          {
+            fps = 20;
+          }
+          // ２幕以降は速く戻す
+          else
+          {
+            fps = 4;
+          }
           for(int i = 1; i <= fps * NORMAL_TIME; ++i)
           {
             // ブレンド
@@ -221,7 +232,7 @@ void MainWindow::getArrivalFile()
 
                   // 10秒掛けて表示する
                   boost::timer t;
-                  int fps = 20;
+                  int fps = 4;
                   int pixel_num = display_image.cols * display_image.rows;
                   for(int i = 0; i < fps * NORMAL_TIME; ++i)
                   {
@@ -231,19 +242,13 @@ void MainWindow::getArrivalFile()
                     cv::Mat garden_show(garden_image, garden_roi);
                     cv::resize(garden_show, resize_garden, cv::Size(display_image.cols, display_image.rows));
 
-                    // ブレンド
-                    double persentage = (double)i / (double)(fps * NORMAL_TIME) * 100.0 + 1.0;
-                    int show_pixel = exp(log(persentage)) / 100.0 * (double)pixel_num;
-                    for(int j = 0; j < show_pixel / 8; ++j)
+                    // 第１幕ではゆっくり
+                    // 第２幕以降は速く表示
+                    else
                     {
-                      int show_x = rand() % display_image.cols;
-                      int show_y = rand() % display_image.rows;
-                      display_image.at<cv::Vec3b>(show_y, show_x) = resize_diff.at<cv::Vec3b>(show_y, show_x);
+                      // ブレンド
+                      display_image = alphaBlend(resize_garden, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
                     }
-
-                    // ブレンド
-//                    display_image = alphaBlend(resize_garden, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
-
                     showFullScreen(display_image);
                   }
                   cout << "Garden -> Diff Elapsed time: " << t.elapsed() << endl;
@@ -320,18 +325,18 @@ cv::Mat MainWindow::alphaBlend(const cv::Mat& src1, const cv::Mat& src2, const d
 
 void MainWindow::showFullScreen(const cv::Mat& image)
 {
-//  cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
+  //  cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
 
-//  cv::Mat show(display_image.size(), display_image.type());
-//  show = cv::Mat::zeros(show.size(), show.type());
-//  image.copyTo(show, mask_show);
+  //  cv::Mat show(display_image.size(), display_image.type());
+  //  show = cv::Mat::zeros(show.size(), show.type());
+  //  image.copyTo(show, mask_show);
 
-//  cvNamedWindow("arrival", 0);
-//  cvMoveWindow("arrival", 0, -800);
+  //  cvNamedWindow("arrival", 0);
+  //  cvMoveWindow("arrival", 0, -800);
 
-//  IplImage new_image = image;
-//  cvShowImage("arrival", &new_image);
-//  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+  //  IplImage new_image = image;
+  //  cvShowImage("arrival", &new_image);
+  //  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
   cv::imshow("display", image);
 }
