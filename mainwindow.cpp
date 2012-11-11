@@ -423,7 +423,7 @@ bool MainWindow::isAllBlack(const cv::Mat& src)
   {
     for(int y = 0; y < src.rows; ++y)
     {
-      for(int x = 0; x < src.cols; ++x)
+      for(int x = src.cols / 3; x < src.cols / 3 * 2; ++x)
       {
         if(src.at<uchar>(y, x) != 0)
         {
