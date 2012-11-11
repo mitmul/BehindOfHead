@@ -13,7 +13,7 @@
 #include <dirent.h>
 #include "kinectcontrol.h"
 
-#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-10/"
+#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-11/"
 #define NORMAL_TIME 10
 #define FIRST_PART 14
 #define SECOND_PART 28
@@ -65,8 +65,6 @@ private:
     cv::Point getGravCenter(const cv::Mat& mask);
     cv::Point getTopPoint(const cv::Mat& mask);
     bool isAllBlack(const cv::Mat& src);
-    int getAliveCellNum(const cv::Mat& src, const cv::Point target);
-    void getLifeGamePic();
 };
 
 #endif // MAINWINDOW_H

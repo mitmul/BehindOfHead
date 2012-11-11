@@ -27,14 +27,11 @@ MainWindow::MainWindow(QWidget *parent) :
   screen_mode = 0;
 
   // Kinect開始
-  //  on_pushButton_SensorStart_clicked();
+  on_pushButton_SensorStart_clicked();
 
   // ディレクトリ監視
   dir_thread_running = true;
   dir_thread = new boost::thread(boost::bind(&MainWindow::getArrivalFile, this));
-
-  //  getLifeGamePic();
-
 }
 
 MainWindow::~MainWindow()
@@ -333,20 +330,20 @@ cv::Mat MainWindow::alphaBlend(const cv::Mat& src1, const cv::Mat& src2, const d
 
 void MainWindow::showFullScreen(const cv::Mat& image)
 {
-  //  cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
+  //    cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
 
-  //  cv::Mat show(display_image.size(), display_image.type());
-  //  show = cv::Mat::zeros(show.size(), show.type());
-  //  image.copyTo(show, mask_show);
+  //    cv::Mat show(display_image.size(), display_image.type());
+  //    show = cv::Mat::zeros(show.size(), show.type());
+  //    image.copyTo(show, mask_show);
 
-  //  cvNamedWindow("arrival", 0);
-  //  cvMoveWindow("arrival", 0, -800);
+  cvNamedWindow("arrival", 0);
+  cvMoveWindow("arrival", 0, -800);
 
-  //  IplImage new_image = image;
-  //  cvShowImage("arrival", &new_image);
-  //  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+  IplImage new_image = image;
+  cvShowImage("arrival", &new_image);
+  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
-  cv::imshow("display", image);
+  //  cv::imshow("display", image);
 }
 
 void MainWindow::showMatInfo(const cv::Mat& src)
@@ -440,83 +437,6 @@ bool MainWindow::isAllBlack(const cv::Mat& src)
     ret = false;
   }
   return ret;
-}
-
-int MainWindow::getAliveCellNum(const cv::Mat& src, const cv::Point target)
-{
-  int alive_num = 0;
-  for(int y = -1; y <= 1; ++y)
-  {
-    for(int x = -1; x <= 1; ++x)
-    {
-      if(x != 0 && y != 0)
-      {
-        int focus_x = target.x + x;
-        int focus_y = target.y + y;
-        if(focus_x > src.cols)
-          focus_x = x;
-        if(focus_x < 0)
-          focus_x = src.cols + x;
-        if(focus_y > src.rows)
-          focus_y = y;
-        if(focus_y < 0)
-          focus_y = src.rows + y;
-
-        if(src.at<uchar>(focus_y, focus_x) == 255)
-        {
-          ++alive_num;
-        }
-      }
-    }
-  }
-  return alive_num;
-}
-
-void MainWindow::getLifeGamePic()
-{
-  // 初期生存セル
-  cv::Mat life_game(display_image.size(), CV_8UC1);
-  for(int i = 0; i < 1000000; ++i)
-  {
-    int x = rand() % life_game.cols;
-    int y = rand() % life_game.rows;
-    life_game.at<uchar>(y, x) = 255;
-  }
-  cv::imshow("life", life_game);
-
-  while(1)
-  {
-    for(int y = 0; y < life_game.rows; ++y)
-    {
-      for(int x = 0; x < life_game.cols; ++x)
-      {
-        uchar target = life_game.at<uchar>(y, x);
-        cv::Point focus(x, y);
-        int alive = getAliveCellNum(life_game, focus);
-
-        // 死んでいるセル
-        if(target == 0)
-        {
-          if(alive == 3)
-          {
-            life_game.at<uchar>(y, x) = 255;
-          }
-        }
-        // 生きているセル
-        if(target == 255)
-        {
-          if(alive <= 1 || alive >= 4)
-          {
-            life_game.at<uchar>(y, x) = 0;
-          }
-        }
-      }
-    }
-
-    cv::imshow("life", life_game);
-    if(cv::waitKey(1) == 113)
-      break;
-  }
 }
 
 void MainWindow::on_pushButton_SensorStart_clicked()
