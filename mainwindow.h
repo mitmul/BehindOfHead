@@ -13,9 +13,9 @@
 #include <dirent.h>
 #include "kinectcontrol.h"
 
-#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-11/"
+#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-12/"
 #define NORMAL_TIME 10
-#define FIRST_PART 14
+#define FIRST_PART 16
 #define SECOND_PART 28
 
 namespace Ui {
@@ -38,6 +38,9 @@ private:
 
     cv::Mat display_image;
     int screen_mode;
+
+    boost::mutex thread_sync;
+    boost::condition_variable thread_state;
 
     KinectControl kinect;
     boost::thread* kinect_thread;

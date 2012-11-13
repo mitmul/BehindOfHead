@@ -63,6 +63,8 @@ void MainWindow::getKinectData()
       XnLabel* user_md = kinect.getUserMaskData();
       cv::Mat mask(480, 640, CV_16SC1, user_md);
       mask.convertTo(mask_show, CV_8U, 255.0);
+      cv::GaussianBlur(mask_show, mask_show, cv::Size(0, 0), 10);
+      cv::imshow("mask", mask_show);
 
       if(arrival_pic_number == FIRST_PART)
       {
@@ -100,7 +102,7 @@ void MainWindow::getKinectData()
           // １幕はゆっくり戻す
           if(arrival_pic_number <= FIRST_PART)
           {
-            fps = 20;
+            fps = 4;
           }
           // ２幕以降は速く戻す
           else
@@ -124,22 +126,13 @@ void MainWindow::getKinectData()
         if(screen_mode == 1)
           screen_mode = 0;
 
-        //        changeGardenROI(new_x, new_y);
-        cv::Mat roi(garden_image, garden_roi);
-
         // 庭写真モードなら表示
         if(screen_mode == 0)
         {
+          cv::Mat roi(garden_image, garden_roi);
           cv::resize(roi, display_image, cv::Size(display_image.cols, display_image.rows));
           showFullScreen(display_image);
         }
-      }
-
-      // ユーザがいなかったら
-      else
-      {
-        // 撮影写真モードにする
-        screen_mode = 1;
       }
     }
     catch(std::exception &e)
@@ -193,6 +186,9 @@ void MainWindow::getArrivalFile()
                 // 遷移モードにする
                 screen_mode = 2;
 
+                // ブレンド用のディスプレイ画像コピー
+                cv::Mat display = display_image.clone();
+
                 // 奇数枚目ならば
                 if(arrival_pic_number % 2 == 1)
                 {
@@ -204,16 +200,15 @@ void MainWindow::getArrivalFile()
                   // 10秒掛けて表示する
                   boost::timer t;
                   int fps = 4;
+
                   for(int i = 1; i <= fps * NORMAL_TIME; ++i)
                   {
-                    // 到着した写真を庭写真の大きさにリサイズ
-                    cv::Mat resize_normal, resize_garden;
+                    // 到着した写真を表示用にリサイズ
+                    cv::Mat resize_normal;
                     cv::resize(normal_photo, resize_normal, cv::Size(display_image.cols, display_image.rows));
-                    cv::Mat garden_show(garden_image, garden_roi);
-                    cv::resize(garden_show, resize_garden, cv::Size(display_image.cols, display_image.rows));
 
                     // ブレンド
-                    display_image = alphaBlend(resize_garden, resize_normal, (double)i / (double)(fps * NORMAL_TIME));
+                    display_image = alphaBlend(display, resize_normal, (double)i / (double)(fps * NORMAL_TIME));
 
                     showFullScreen(display_image);
                   }
@@ -242,17 +237,15 @@ void MainWindow::getArrivalFile()
                   {
                     fps = 4;
                   }
-                  int pixel_num = display_image.cols * display_image.rows;
+
                   for(int i = 0; i < fps * NORMAL_TIME; ++i)
                   {
-                    // 到着した写真を庭写真にリサイズ
-                    cv::Mat resize_diff, resize_garden;
+                    // 差分画像を表示用にリサイズ
+                    cv::Mat resize_diff;
                     cv::resize(diff_photo, resize_diff, cv::Size(display_image.cols, display_image.rows));
-                    cv::Mat garden_show(garden_image, garden_roi);
-                    cv::resize(garden_show, resize_garden, cv::Size(display_image.cols, display_image.rows));
 
                     // ブレンド
-                    display_image = alphaBlend(resize_garden, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
+                    display_image = alphaBlend(display, resize_diff, (double)i / (double)(fps * NORMAL_TIME));
 
                     showFullScreen(display_image);
                   }
@@ -325,25 +318,26 @@ cv::Mat MainWindow::alphaBlend(const cv::Mat& src1, const cv::Mat& src2, const d
       }
     }
   }
+
   return dst;
 }
 
 void MainWindow::showFullScreen(const cv::Mat& image)
 {
-  //    cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
+//      cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
 
-  //    cv::Mat show(display_image.size(), display_image.type());
-  //    show = cv::Mat::zeros(show.size(), show.type());
-  //    image.copyTo(show, mask_show);
+//      cv::Mat show(display_image.size(), display_image.type());
+//      show = cv::Mat::zeros(show.size(), show.type());
+//      image.copyTo(show, mask_show);
 
-  cvNamedWindow("arrival", 0);
-  cvMoveWindow("arrival", 0, -800);
+//  cvNamedWindow("arrival", 0);
+//  cvMoveWindow("arrival", 0, -800);
 
-  IplImage new_image = image;
-  cvShowImage("arrival", &new_image);
-  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+//  IplImage new_image = image;
+//  cvShowImage("arrival", &new_image);
+//  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
-  //  cv::imshow("display", image);
+    cv::imshow("display", image);
 }
 
 void MainWindow::showMatInfo(const cv::Mat& src)
