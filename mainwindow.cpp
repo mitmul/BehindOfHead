@@ -17,6 +17,9 @@ MainWindow::MainWindow(QWidget *parent) :
   // ユーザ初期位置
   user_pos = cv::Point(0, 0);
 
+  // ユーザ型に庭を出す時間
+  user_shape_time = 0;
+
   // 初期枚数
   arrival_pic_number = 1;
 
@@ -64,7 +67,6 @@ void MainWindow::getKinectData()
       cv::Mat mask(480, 640, CV_16SC1, user_md);
       mask.convertTo(mask_show, CV_8U, 255.0);
       cv::GaussianBlur(mask_show, mask_show, cv::Size(0, 0), 10);
-      cv::imshow("mask", mask_show);
 
       if(arrival_pic_number == FIRST_PART)
       {
@@ -85,7 +87,11 @@ void MainWindow::getKinectData()
         if(screen_mode == 1)
         {
           // 遷移モードにする
-          screen_mode = 2;
+          //          screen_mode = 2;
+
+          // マスク画像をリサイズ
+          cv::Mat resize_mask;
+          cv::resize(mask_show, resize_mask, cv::Size(display_image.cols, display_image.rows));
 
           // 目標画像
           cv::Mat resize_garden;
@@ -95,36 +101,53 @@ void MainWindow::getKinectData()
           // 元画像
           cv::Mat arrival_photo = display_image.clone();
 
-          // 10秒掛けて表示する
-          boost::timer t;
-          int fps;
-
-          // １幕はゆっくり戻す
-          if(arrival_pic_number <= FIRST_PART)
+          // 人型に庭
+          cv::Mat man(display_image.size(), display_image.type());
+          for(int y = 0; y < display_image.rows; ++y)
           {
-            fps = 4;
+            for(int x = 0; x < display_image.cols; ++x)
+            {
+              double alpha = (double)resize_mask.at<uchar>(y, x) / 255.0;
+              for(int c = 0; c < 3; ++c)
+              {
+                man.at<cv::Vec3b>(y, x)[c] = (uchar)(alpha * resize_garden.at<cv::Vec3b>(y, x)[c] + (1.0 - alpha) * arrival_photo.at<cv::Vec3b>(y, x)[c]);
+              }
+            }
           }
-          // ２幕以降は速く戻す
-          else
-          {
-            fps = 4;
-          }
-          for(int i = 1; i <= fps * NORMAL_TIME; ++i)
-          {
-            // ブレンド
-            arrival_photo = alphaBlend(display_image, resize_garden, (double)i / (double)(fps * NORMAL_TIME));
+          showFullScreen(man);
 
-            showFullScreen(arrival_photo);
-          }
-          cout << "Elapsed time: " << t.elapsed() << endl;
+          ++user_shape_time;
 
-          // 庭写真モードにする
-          screen_mode = 0;
+          // 人型タイム終了なら
+          if(user_shape_time > 100)
+          {
+            boost::timer t;
+            int fps;
+
+            // １幕はゆっくり戻す
+            if(arrival_pic_number <= FIRST_PART)
+            {
+              fps = FIRST_PART_BACK_TIME;
+            }
+            // ２幕以降は速く戻す
+            else
+            {
+              fps = SECOND_PART_BACK_TIME;
+            }
+            for(int i = 1; i <= fps * NORMAL_TIME; ++i)
+            {
+              // ブレンド
+              arrival_photo = alphaBlend(man, resize_garden, (double)i / (double)(fps * NORMAL_TIME));
+
+              showFullScreen(arrival_photo);
+            }
+            cout << "Elapsed time: " << t.elapsed() << endl;
+
+            // 庭写真モードにする
+            screen_mode = 0;
+            user_shape_time = 0;
+          }
         }
-
-        // 庭写真モードにする
-        if(screen_mode == 1)
-          screen_mode = 0;
 
         // 庭写真モードなら表示
         if(screen_mode == 0)
@@ -229,13 +252,13 @@ void MainWindow::getArrivalFile()
                   // 第１幕ではゆっくり
                   if(arrival_pic_number <= FIRST_PART)
                   {
-                    fps = 20;
+                    fps = FIRST_PART_BACK_TIME;
                   }
 
                   // 第２幕以降は速く表示
                   else
                   {
-                    fps = 4;
+                    fps = SECOND_PART_BACK_TIME;
                   }
 
                   for(int i = 0; i < fps * NORMAL_TIME; ++i)
@@ -324,20 +347,20 @@ cv::Mat MainWindow::alphaBlend(const cv::Mat& src1, const cv::Mat& src2, const d
 
 void MainWindow::showFullScreen(const cv::Mat& image)
 {
-//      cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
+  //      cv::resize(mask_show, mask_show, cv::Size(display_image.cols, display_image.rows));
 
-//      cv::Mat show(display_image.size(), display_image.type());
-//      show = cv::Mat::zeros(show.size(), show.type());
-//      image.copyTo(show, mask_show);
+  //      cv::Mat show(display_image.size(), display_image.type());
+  //      show = cv::Mat::zeros(show.size(), show.type());
+  //      image.copyTo(show, mask_show);
 
-//  cvNamedWindow("arrival", 0);
-//  cvMoveWindow("arrival", 0, -800);
+  //  cvNamedWindow("arrival", 0);
+  //  cvMoveWindow("arrival", 0, -800);
 
-//  IplImage new_image = image;
-//  cvShowImage("arrival", &new_image);
-//  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+  //  IplImage new_image = image;
+  //  cvShowImage("arrival", &new_image);
+  //  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
-    cv::imshow("display", image);
+  cv::imshow("display", image);
 }
 
 void MainWindow::showMatInfo(const cv::Mat& src)

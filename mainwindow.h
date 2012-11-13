@@ -17,6 +17,8 @@
 #define NORMAL_TIME 10
 #define FIRST_PART 16
 #define SECOND_PART 28
+#define FIRST_PART_BACK_TIME 20
+#define SECOND_PART_BACK_TIME 4
 
 namespace Ui {
   class MainWindow;
@@ -50,6 +52,7 @@ private:
     cv::Mat garden_image;
     cv::Rect garden_roi;
     cv::Point user_pos;
+    int user_shape_time;
 
     boost::thread* dir_thread;
     bool dir_thread_running;
