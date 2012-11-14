@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   // 庭写真
   garden_image = cv::imread("5.jpg");
-  garden_roi = cv::Rect(0, 500, garden_image.cols, (double)garden_image.cols / 16.0 * 11.0);
+  garden_roi = cv::Rect(0, 700, garden_image.cols, (double)garden_image.cols / 16.0 * 11.0);
 
   // ユーザ初期位置
   user_pos = cv::Point(0, 0);
@@ -66,15 +66,18 @@ void MainWindow::getKinectData()
       XnLabel* user_md = kinect.getUserMaskData();
       cv::Mat mask(480, 640, CV_16SC1, user_md);
       mask.convertTo(mask_show, CV_8U, 255.0);
+      cv::flip(mask_show, mask_show, 1);
       cv::GaussianBlur(mask_show, mask_show, cv::Size(0, 0), 10);
 
-      if(arrival_pic_number == FIRST_PART)
+      // 一幕が終わったら
+      if(arrival_pic_number == (FIRST_PART + 2))
       {
         garden_image = cv::imread("7.jpg");
         garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
       }
 
-      if(arrival_pic_number == SECOND_PART)
+      // パフォーマンスが終わったら
+      if(arrival_pic_number == (PERFORMANCE_PART + 1))
       {
         garden_image = cv::imread("3.jpg");
         garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
@@ -86,9 +89,6 @@ void MainWindow::getKinectData()
         // 撮影写真モードから戻る場合
         if(screen_mode == 1)
         {
-          // 遷移モードにする
-          //          screen_mode = 2;
-
           // マスク画像をリサイズ
           cv::Mat resize_mask;
           cv::resize(mask_show, resize_mask, cv::Size(display_image.cols, display_image.rows));
@@ -101,51 +101,63 @@ void MainWindow::getKinectData()
           // 元画像
           cv::Mat arrival_photo = display_image.clone();
 
-          // 人型に庭
-          cv::Mat man(display_image.size(), display_image.type());
-          for(int y = 0; y < display_image.rows; ++y)
+          // パフォーマンスタイムでなければ
+          if(arrival_pic_number <= (FIRST_PART + 1) || arrival_pic_number > PERFORMANCE_PART)
           {
-            for(int x = 0; x < display_image.cols; ++x)
+            // 人型に庭
+            cv::Mat man(display_image.size(), display_image.type());
+            for(int y = 0; y < display_image.rows; ++y)
             {
-              double alpha = (double)resize_mask.at<uchar>(y, x) / 255.0;
-              for(int c = 0; c < 3; ++c)
+              for(int x = 0; x < display_image.cols; ++x)
               {
-                man.at<cv::Vec3b>(y, x)[c] = (uchar)(alpha * resize_garden.at<cv::Vec3b>(y, x)[c] + (1.0 - alpha) * arrival_photo.at<cv::Vec3b>(y, x)[c]);
+                double alpha = (double)resize_mask.at<uchar>(y, x) / 255.0;
+                for(int c = 0; c < 3; ++c)
+                {
+                  man.at<cv::Vec3b>(y, x)[c] = (uchar)(alpha * resize_garden.at<cv::Vec3b>(y, x)[c] + (1.0 - alpha) * arrival_photo.at<cv::Vec3b>(y, x)[c]);
+                }
               }
             }
+            showFullScreen(man);
+
+            ++user_shape_time;
+
+            // 人型タイム終了なら
+            if(user_shape_time > USER_SHAPE_TIME_LIMIT)
+            {
+              boost::timer t;
+              int fps;
+
+              // １幕はゆっくり戻す
+              if(arrival_pic_number <= FIRST_PART)
+              {
+                fps = FIRST_PART_BACK_TIME;
+              }
+              // ２幕以降は速く戻す
+              else
+              {
+                fps = SECOND_PART_BACK_TIME;
+              }
+              for(int i = 1; i <= fps * NORMAL_TIME; ++i)
+              {
+                // ブレンド
+                arrival_photo = alphaBlend(man, resize_garden, (double)i / (double)(fps * NORMAL_TIME));
+
+                showFullScreen(arrival_photo);
+              }
+              cout << "Elapsed time: " << t.elapsed() << endl;
+
+              // 庭写真モードにする
+              display_image = arrival_photo;
+              screen_mode = 0;
+              user_shape_time = 0;
+            }
           }
-          showFullScreen(man);
-
-          ++user_shape_time;
-
-          // 人型タイム終了なら
-          if(user_shape_time > 100)
+          // パフォーマンスタイムなら
+          else
           {
-            boost::timer t;
-            int fps;
-
-            // １幕はゆっくり戻す
-            if(arrival_pic_number <= FIRST_PART)
-            {
-              fps = FIRST_PART_BACK_TIME;
-            }
-            // ２幕以降は速く戻す
-            else
-            {
-              fps = SECOND_PART_BACK_TIME;
-            }
-            for(int i = 1; i <= fps * NORMAL_TIME; ++i)
-            {
-              // ブレンド
-              arrival_photo = alphaBlend(man, resize_garden, (double)i / (double)(fps * NORMAL_TIME));
-
-              showFullScreen(arrival_photo);
-            }
-            cout << "Elapsed time: " << t.elapsed() << endl;
-
             // 庭写真モードにする
+            display_image = arrival_photo;
             screen_mode = 0;
-            user_shape_time = 0;
           }
         }
 
@@ -220,11 +232,22 @@ void MainWindow::getArrivalFile()
                   // 普通の写真
                   normal_photo = cv::imread(new_file);
 
-                  // 10秒掛けて表示する
                   boost::timer t;
-                  int fps = 4;
+                  int fps;
 
-                  for(int i = 1; i <= fps * NORMAL_TIME; ++i)
+                  // パフォーマンスタイムではすぐに
+                  if(arrival_pic_number > FIRST_PART && arrival_pic_number <= PERFORMANCE_PART)
+                  {
+                    fps = 1;
+                  }
+
+                  // それ以外は数秒で表示
+                  else
+                  {
+                    fps = SECOND_PART_BACK_TIME;
+                  }
+
+                  for(int i = 0; i < fps * NORMAL_TIME; ++i)
                   {
                     // 到着した写真を表示用にリサイズ
                     cv::Mat resize_normal;
@@ -245,18 +268,23 @@ void MainWindow::getArrivalFile()
                   diff_photo = cv::imread(new_file);
                   cv::absdiff(normal_photo, diff_photo, diff_photo);
 
-                  // 10秒掛けて表示する
                   boost::timer t;
                   int fps;
 
                   // 第１幕ではゆっくり
-                  if(arrival_pic_number <= FIRST_PART)
+                  if(arrival_pic_number < FIRST_PART)
                   {
                     fps = FIRST_PART_BACK_TIME;
                   }
 
+                  // パフォーマンスタイムではすぐに
+                  if(arrival_pic_number > FIRST_PART && arrival_pic_number <= PERFORMANCE_PART)
+                  {
+                    fps = 1;
+                  }
+
                   // 第２幕以降は速く表示
-                  else
+                  if(arrival_pic_number > PERFORMANCE_PART)
                   {
                     fps = SECOND_PART_BACK_TIME;
                   }
@@ -299,6 +327,15 @@ void MainWindow::getArrivalFile()
 
                 // 撮影写真表示モードにする
                 screen_mode = 1;
+
+                // ラスト
+                if(arrival_pic_number > PERFORMANCE_PART)
+                {
+                  cv::Mat resize_garden;
+                  cv::Mat roi(garden_image, garden_roi);
+                  cv::resize(roi, resize_garden, cv::Size(display_image.cols, display_image.rows));
+                  showFullScreen(resize_garden);
+                }
               }
             }
           }
@@ -353,14 +390,14 @@ void MainWindow::showFullScreen(const cv::Mat& image)
   //      show = cv::Mat::zeros(show.size(), show.type());
   //      image.copyTo(show, mask_show);
 
-  //  cvNamedWindow("arrival", 0);
-  //  cvMoveWindow("arrival", 0, -800);
+  cvNamedWindow("arrival", 0);
+  cvMoveWindow("arrival", 0, -800);
 
-  //  IplImage new_image = image;
-  //  cvShowImage("arrival", &new_image);
-  //  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+  IplImage new_image = image;
+  cvShowImage("arrival", &new_image);
+  cvSetWindowProperty("arrival", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
-  cv::imshow("display", image);
+//    cv::imshow("display", image);
 }
 
 void MainWindow::showMatInfo(const cv::Mat& src)
@@ -441,6 +478,7 @@ bool MainWindow::isAllBlack(const cv::Mat& src)
     for(int y = 0; y < src.rows; ++y)
     {
       for(int x = src.cols / 3; x < src.cols / 3 * 2; ++x)
+        //      for(int x = 0; x < src.cols; ++x)
       {
         if(src.at<uchar>(y, x) != 0)
         {

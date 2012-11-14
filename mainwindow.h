@@ -13,12 +13,15 @@
 #include <dirent.h>
 #include "kinectcontrol.h"
 
-#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-12/"
+#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-14/"
 #define NORMAL_TIME 10
-#define FIRST_PART 16
-#define SECOND_PART 28
-#define FIRST_PART_BACK_TIME 20
+
+#define FIRST_PART 14
+#define PERFORMANCE_PART 31
+
+#define FIRST_PART_BACK_TIME 8
 #define SECOND_PART_BACK_TIME 4
+#define USER_SHAPE_TIME_LIMIT 12
 
 namespace Ui {
   class MainWindow;
