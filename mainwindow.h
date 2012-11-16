@@ -13,7 +13,7 @@
 #include <dirent.h>
 #include "kinectcontrol.h"
 
-#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-14/"
+#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-16/"
 #define NORMAL_TIME 10
 
 #define FIRST_PART 14
