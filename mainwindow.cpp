@@ -29,6 +29,9 @@ MainWindow::MainWindow(QWidget *parent) :
   // 0:庭写真、1:撮影写真、2:遷移中
   screen_mode = 0;
 
+  // パフォーマンス準備完了？
+  performance_prepared = false;
+
   // Kinect開始
   on_pushButton_SensorStart_clicked();
 
@@ -70,11 +73,11 @@ void MainWindow::getKinectData()
       cv::GaussianBlur(mask_show, mask_show, cv::Size(0, 0), 10);
 
       // 一幕が終わったら
-      if(arrival_pic_number == (FIRST_PART + 2))
-      {
-        garden_image = cv::imread("7.jpg");
-        garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
-      }
+//      if(arrival_pic_number == (FIRST_PART + 2))
+//      {
+//        garden_image = cv::imread("7.jpg");
+//        garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
+//      }
 
       // パフォーマンスが終わったら
       if(arrival_pic_number == (PERFORMANCE_PART + 1))
@@ -86,6 +89,17 @@ void MainWindow::getKinectData()
       // ユーザがいて遷移モードじゃなければ
       if(!isAllBlack(mask_show) && screen_mode != 2)
       {
+        // パフォーマンス直前なら
+        if(performance_prepared)
+        {
+          garden_image = cv::imread("7.jpg");
+          garden_roi = cv::Rect(0, 0, garden_image.cols, garden_image.rows);
+
+          cv::Mat roi(garden_image, garden_roi);
+          cv::resize(roi, display_image, cv::Size(display_image.cols, display_image.rows));
+          showFullScreen(display_image);
+        }
+
         // 撮影写真モードから戻る場合
         if(screen_mode == 1)
         {
@@ -164,6 +178,12 @@ void MainWindow::getKinectData()
         // 庭写真モードなら表示
         if(screen_mode == 0)
         {
+          // 庭写真モードでかつパフォーマンス直前なら
+          if(arrival_pic_number == (FIRST_PART + 1))
+          {
+            performance_prepared = true;
+          }
+
           cv::Mat roi(garden_image, garden_roi);
           cv::resize(roi, display_image, cv::Size(display_image.cols, display_image.rows));
           showFullScreen(display_image);
@@ -324,6 +344,8 @@ void MainWindow::getArrivalFile()
                 }
 
                 ++arrival_pic_number;
+
+                cout << "arrival_pic_number:" << arrival_pic_number << endl;
 
                 // 撮影写真表示モードにする
                 screen_mode = 1;

@@ -13,15 +13,15 @@
 #include <dirent.h>
 #include "kinectcontrol.h"
 
-#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-16/"
+#define DIR_NAME "/Users/saito/Pictures/Eye-Fi/2012-11-18/"
 #define NORMAL_TIME 10
 
-#define FIRST_PART 14
-#define PERFORMANCE_PART 31
+#define FIRST_PART 16
+#define PERFORMANCE_PART 34
 
-#define FIRST_PART_BACK_TIME 8
-#define SECOND_PART_BACK_TIME 4
-#define USER_SHAPE_TIME_LIMIT 12
+#define FIRST_PART_BACK_TIME 1//8
+#define SECOND_PART_BACK_TIME 1//4
+#define USER_SHAPE_TIME_LIMIT 1//20
 
 namespace Ui {
   class MainWindow;
@@ -56,6 +56,7 @@ private:
     cv::Rect garden_roi;
     cv::Point user_pos;
     int user_shape_time;
+    bool performance_prepared;
 
     boost::thread* dir_thread;
     bool dir_thread_running;
