@@ -19,9 +19,9 @@
 #define FIRST_PART 16
 #define PERFORMANCE_PART 34
 
-#define FIRST_PART_BACK_TIME 1//8
-#define SECOND_PART_BACK_TIME 1//4
-#define USER_SHAPE_TIME_LIMIT 1//20
+#define FIRST_PART_BACK_TIME 8
+#define SECOND_PART_BACK_TIME 4
+#define USER_SHAPE_TIME_LIMIT 20
 
 namespace Ui {
   class MainWindow;
